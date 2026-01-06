@@ -1,11 +1,5 @@
-.DS_Store, *.sublime-project, *.sublime-workspace, *.dSYM/
-example/tiled_example.sublime-project
-example/tiled_example.sublime-workspace
+.DS_Store
 *.sublime-project
-example/example.dSYM/Contents/Resources/Relocations/aarch64/example.yml
-example/example.dSYM/Contents/Resources/DWARF/example
-example/example.dSYM/Contents/Info.plist
-example/example
-example/.DS_Store
-example/example
+*.sublime-workspace
+*.dSYM/
 example/example
