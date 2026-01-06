@@ -1,7 +1,7 @@
 package tiled_example
 import "core:fmt"
 import rl "vendor:raylib"
-import tiled "../../tiled"
+import tiled "../"
 
 main :: proc() {
 	level_allocator := context.temp_allocator
