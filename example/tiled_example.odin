@@ -15,7 +15,7 @@ tiled_map_files := []string {
 	"levels/gameart2d-desert.tmj"
 }
 
-
+//Note: This function doesn't account for multiple tilemaps / tilemap textures, and is just arranged this way for the convenience of this demo.
 load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset: tiled.Tileset, texture: rl.Texture) {
 	free_all(alloc)
 	tiled_map = tiled.parse_tilemap(path, alloc)
@@ -32,6 +32,7 @@ load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, t
 
 main :: proc() {
 	level_allocator := context.temp_allocator
+	defer free_all(level_allocator)
 		//Probably want to set this to something like a vmem.Arena
 		//This arena would be flushed when a different level is loaded.
 		//This can be used for all other allocations that exist for the duration that one level is loaded.
