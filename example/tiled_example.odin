@@ -96,7 +96,9 @@ main :: proc() {
 
 			rl.EndMode2D()
 
-			rl.DrawText("pan: arrows, zoom: -/+, change map: space", 0, 0, 20, rl.WHITE)
+			text: cstring : "pan: arrows, zoom: -/+, change map: space"
+			rl.DrawText(text, 4, 2, 20, rl.BLACK)
+			rl.DrawText(text, 6, 4, 20, rl.WHITE)
 
 		rl.EndDrawing()
 	}
