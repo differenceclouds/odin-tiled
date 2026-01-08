@@ -9,9 +9,9 @@ import tiled "../"
 //Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset must be used.
 
 tiled_map_files := []string {
-	"levels/MagicLand.tmj",
 	"levels/jb-32.tmj",
 	"levels/level25.tmj",
+	"levels/MagicLand.tmj",
 	"levels/gameart2d-desert.tmj"
 }
 
