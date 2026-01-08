@@ -6,7 +6,7 @@ import tiled "../"
 
 
 //Tiled maps are in JSON format(.tmj), have "Tile Layer Format" CSV, and "Compression Level" -1.
-//Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset must be used.
+//Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset() must be used.
 
 tiled_map_files := []string {
 	"levels/jb-32.tmj",
@@ -29,12 +29,11 @@ load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, t
 	return
 }
 
-
 main :: proc() {
 	level_allocator := context.temp_allocator
 	defer free_all(level_allocator)
 		//Probably want to set this to something like a vmem.Arena
-		//This arena would be flushed when a different level is loaded.
+		//This arena is flushed when a different map is loaded.
 		//This can be used for all other allocations that exist for the duration that one level is loaded.
 
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
@@ -81,7 +80,7 @@ main :: proc() {
 			rl.BeginMode2D(camera)
 
 			for layer in tiled_map.layers {
-				if layer.type != "tilelayer" do continue
+				if layer.type != "tilelayer" do continue //implement image layers and other static renderables here
 				for gid, i in layer.data {
 					world_x := f32((i32(i) % tiled_map.width) * tileset.tile_width)
 					world_y := f32((i32(i) / tiled_map.width) * tileset.tile_height)
