@@ -5,14 +5,14 @@ import "core:mem"
 import tiled "../"
 
 
-//Tiled maps are in JSON format(.tmj), have "Tile Layer Format" CSV, and "Compression Level" -1.
-//Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset() must be used.
-//In order to embed a tileset, in Tiled Preferences, tick "Export Options->Embed Tilesets," Then, export a new .tmj under File->Export.
+// Tiled maps are in JSON format(.tmj), have "Tile Layer Format" CSV, and "Compression Level" -1.
+// Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset() must be used.
+// In order to embed a tileset, in Tiled Preferences, tick "Export Options->Embed Tilesets," Then, export a new .tmj under File->Export.
 
-//If you do not wish to embed tilesets, you can load with tiled.parse_tileset.
-//However, the parsed tileset struct needs to get its first_gid property from the map file,
-//as the first_gid is not stored in an external tileset file.
-//So, you need to do something like the following:
+// If you do not wish to embed tilesets, you can load with tiled.parse_tileset.
+// However, the parsed tileset struct needs to get its first_gid property from the map file,
+// as the first_gid is not stored in an external tileset file.
+// So, you need to do something like the following:
 
 // for &tileset, i in parsed_tilesets {
 // 	tileset.first_gid = tiled_map.tilesets[i].first_gid
