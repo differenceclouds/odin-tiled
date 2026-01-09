@@ -9,6 +9,13 @@ import tiled "../"
 //Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset() must be used.
 //In order to embed a tileset, in Tiled Preferences, tick "Export Options->Embed Tilesets," Then, export a new .tmj under File->Export.
 
+//If you do not wish to embed tilesets, you can load with tiled.parse_tileset.
+//However, the parsed tileset struct needs to get its first_gid property from the map file.
+//So, you need to something like the following:
+// for &tileset, i in parsed_tilesets {
+// 	tileset.first_gid = tiled_map.tilesets[i].first_gid
+// }
+
 tiled_map_files := []string {
 	"levels/jb-32.tmj",
 	"levels/level25.tmj",
