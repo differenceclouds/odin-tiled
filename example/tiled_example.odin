@@ -7,6 +7,7 @@ import tiled "../"
 
 //Tiled maps are in JSON format(.tmj), have "Tile Layer Format" CSV, and "Compression Level" -1.
 //Tilesets are embedded in the .tmj, otherwise tiled.parse_tileset() must be used.
+//In order to embed a tileset, in Tiled Preferences, tick "Export Options->Embed Tilesets," Then, export a new .tmj under File->Export.
 
 tiled_map_files := []string {
 	"levels/jb-32.tmj",
@@ -83,7 +84,7 @@ main :: proc() {
 				if layer.type != "tilelayer" do continue //implement image layers and other static renderables here
 				for gid, i in layer.data {
 					if gid == 0 do continue
-					
+
 					tileset_idx := gid - tileset.first_gid
 					world_x := f32((i32(i) % tiled_map.width) * tileset.tile_width)
 					world_y := f32((i32(i) / tiled_map.width) * tileset.tile_height)
