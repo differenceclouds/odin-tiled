@@ -82,9 +82,11 @@ main :: proc() {
 			for layer in tiled_map.layers {
 				if layer.type != "tilelayer" do continue //implement image layers and other static renderables here
 				for gid, i in layer.data {
+					if gid == 0 do continue
+					
+					tileset_idx := gid - tileset.first_gid
 					world_x := f32((i32(i) % tiled_map.width) * tileset.tile_width)
 					world_y := f32((i32(i) / tiled_map.width) * tileset.tile_height)
-					tileset_idx := gid - tileset.first_gid
 					tileset_x := f32((tileset_idx % tileset.columns) * (tileset.tile_width + tileset.spacing))
 					tileset_y := f32((tileset_idx / tileset.columns) * (tileset.tile_height + tileset.spacing))
 					source: rl.Rectangle = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
