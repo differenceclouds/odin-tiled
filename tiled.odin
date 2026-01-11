@@ -46,11 +46,11 @@ parse_tilemap :: proc(path: string, alloc : mem.Allocator) -> Map {
 // should probably be the default
 parse_tilemap_and_tilesets :: proc(path: string, alloc : mem.Allocator) -> Map {
 	m := parse_tilemap(path, alloc)
-	dir := filepath.dir(path)
+	dir := filepath.dir(path, alloc)
 
 	for &ts in m.tilesets {
 		if ts.source == "" do continue
-		ts_path := filepath.join({dir, ts.source})
+		ts_path := filepath.join({dir, ts.source}, alloc)
 		external_ts := parse_tileset(ts_path, alloc)
 		external_ts.first_gid = ts.first_gid
 		external_ts.source = ts.source
