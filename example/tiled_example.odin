@@ -19,11 +19,10 @@ tiled_map_files := []string {
 
 // Note: This function doesn't account for multiple tilemaps / tilemap textures, and is just arranged this way for the convenience of this demo.
 load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset: tiled.Tileset, texture: rl.Texture) {
-	free_all(alloc)
 	tiled_map = tiled.parse_tilemap_and_tilesets(path, alloc)
 	tileset = tiled_map.tilesets[0]
 	dir := filepath.dir(path, alloc)
-	tileset_texture_path := fmt.ctprint(filepath.join({dir, tileset.image}))
+	tileset_texture_path := fmt.ctprint(filepath.join({dir, tileset.image}, alloc))
 	texture = rl.LoadTexture(tileset_texture_path)
 	if !rl.IsTextureValid(texture) {
 		panic(fmt.tprintf("Can't load texture from path '%v'", tileset_texture_path))
@@ -33,6 +32,23 @@ load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, t
 
 main :: proc() {
 	level_allocator := context.temp_allocator
+
+	when ODIN_DEBUG {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer {
+			if len(track.allocation_map) > 0 {
+				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+				for _, entry in track.allocation_map {
+					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
+
 	defer free_all(level_allocator)
 		// Probably want to set this to something like a vmem.Arena
 		// This arena is flushed when a different map is loaded.
@@ -49,6 +65,7 @@ main :: proc() {
 	camera := rl.Camera2D { zoom = 1 }
 
 	for !rl.WindowShouldClose() {
+
 		camera_speed := 200 * rl.GetFrameTime()
 		if rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT) {
 			camera_speed *= 3
@@ -73,7 +90,12 @@ main :: proc() {
 		}
 		if rl.IsKeyPressed(.SPACE) {
 			map_idx = (map_idx + 1) %% len(tiled_map_files)
+
+			free_all(level_allocator)
+			rl.UnloadTexture(tileset_texture)
+
 			tiled_map, tileset, tileset_texture = load_map(tiled_map_files[map_idx], level_allocator)
+			fmt.printfln("%#v", tileset_texture)
 			camera.target = 0
 		}
 
