@@ -3,6 +3,7 @@ import "core:fmt"
 import rl "vendor:raylib"
 import "core:mem"
 import tiled "../"
+import filepath "core:path/filepath"
 
 
 // Tiled maps are in JSON format(.tmj), have "Tile Layer Format" CSV, and "Compression Level" -1.
@@ -29,10 +30,10 @@ tiled_map_files := []string {
 // Note: This function doesn't account for multiple tilemaps / tilemap textures, and is just arranged this way for the convenience of this demo.
 load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset: tiled.Tileset, texture: rl.Texture) {
 	free_all(alloc)
-	tiled_map = tiled.parse_tilemap(path, alloc)
+	tiled_map = tiled.parse_tilemap_and_tilesets(path, alloc)
 	tileset = tiled_map.tilesets[0]
-
-	tileset_texture_path := fmt.ctprintf("levels/%v",tileset.image)
+	dir := filepath.dir(path)
+	tileset_texture_path := fmt.ctprint(filepath.join({dir, tileset.image}))
 	texture = rl.LoadTexture(tileset_texture_path)
 	if !rl.IsTextureValid(texture) {
 		panic(fmt.tprintf("Can't load texture from path '%v'", tileset_texture_path))

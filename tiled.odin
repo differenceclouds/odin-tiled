@@ -4,7 +4,7 @@ import json "core:encoding/json"
 import os "core:os"
 import fmt "core:fmt"
 import "core:mem"
-import ppath "core:path/filepath"
+import filepath "core:path/filepath"
 
 /*
 	Based on the JSON Map Format for Tiled 1.2.
@@ -25,18 +25,37 @@ parse_tilemap :: proc(path: string, alloc : mem.Allocator) -> Map {
 	m: Map
 	jdata, ok := os.read_entire_file(path, alloc)
 	if !ok {
-		fmt.print("ODIN_TILED: Failed to read file: ", path, "\n")
+		fmt.println("ODIN_TILED: Failed to read file: ", path)
 		return m
 	}
 
 	err := json.unmarshal(jdata, &m, allocator = alloc)
 	if err != nil {
 		fmt.print("ODIN_TILED: Failed to unmarshal JSON: ", err, "\n")
-		ext := ppath.ext(path)
-		if ext == ".tmx" || ext == ".tsx" {
+		ext := filepath.ext(path)
+		if ext == ".tmx" || ext == ".tsx" || ext == ".xml" {
 			fmt.println("ODIN_TILED: file appears to be XML; only JSON is supported")
 		}
 		return m
+	}
+	return m
+}
+
+
+// tries to parse tilemap and all external tilesets.
+// should probably be the default
+parse_tilemap_and_tilesets :: proc(path: string, alloc : mem.Allocator) -> Map {
+	m := parse_tilemap(path, alloc)
+	dir := filepath.dir(path)
+
+	for &ts in m.tilesets {
+		if ts.source == "" do continue
+		ts_path := filepath.join({dir, ts.source})
+		external_ts := parse_tileset(ts_path, alloc)
+		external_ts.first_gid = ts.first_gid
+		external_ts.source = ts.source
+		fmt.printfln("%#v", external_ts)
+		ts = external_ts
 	}
 	return m
 }
@@ -54,14 +73,24 @@ parse_tileset :: proc(path: string, alloc : mem.Allocator) -> Tileset {
 	err := json.unmarshal(jdata, &ts, allocator = alloc)
 	if err != nil {
 		fmt.print("ODIN_TILED: Failed to unmarshal JSON from ", path, ": ", err, "\n")
-		ext := ppath.ext(path)
-		if ext == ".tmx" || ext == ".tsx" {
+		ext := filepath.ext(path)
+		if ext == ".tmx" || ext == ".tsx" || ext == ".xml" {
 			fmt.println("ODIN_TILED: File appears to be XML; only JSON is supported")
 		}
 		return ts
 	}
 	return ts
 }
+
+parse_external_tilesets :: proc(m: Map, alloc : mem.Allocator) -> []Tileset {
+	tilesets := make_slice([]Tileset, len(m.tilesets), alloc)
+	for &tileset, i in tilesets {
+		tileset = parse_tileset(m.tilesets[i].source, alloc)
+		tileset.first_gid = m.tilesets[i].first_gid
+	}
+	return tilesets
+}
+
 
 // parse_template :: proc(path: string, alloc: mem.Allocator = context.allocator) -> Obj
 
