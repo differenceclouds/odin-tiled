@@ -54,7 +54,6 @@ parse_tilemap_and_tilesets :: proc(path: string, alloc : mem.Allocator) -> Map {
 		external_ts := parse_tileset(ts_path, alloc)
 		external_ts.first_gid = ts.first_gid
 		external_ts.source = ts.source
-		fmt.printfln("%#v", external_ts)
 		ts = external_ts
 	}
 	return m
