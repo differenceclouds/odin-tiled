@@ -95,7 +95,6 @@ main :: proc() {
 			rl.UnloadTexture(tileset_texture)
 
 			tiled_map, tileset, tileset_texture = load_map(tiled_map_files[map_idx], level_allocator)
-			fmt.printfln("%#v", tileset_texture)
 			camera.target = 0
 		}
 
