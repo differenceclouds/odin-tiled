@@ -32,6 +32,9 @@ load_map :: proc(path: string, alloc: mem.Allocator) -> (tiled_map: tiled.Map, t
 
 main :: proc() {
 	level_allocator := context.temp_allocator
+		// Probably want to set this to something like a vmem.Arena
+		// This arena is flushed when a different map is loaded.
+		// This can be used for all other allocations that exist for the duration that one level is loaded.
 
 	when ODIN_DEBUG {
 		track: mem.Tracking_Allocator
@@ -50,9 +53,7 @@ main :: proc() {
 	}
 
 	defer free_all(level_allocator)
-		// Probably want to set this to something like a vmem.Arena
-		// This arena is flushed when a different map is loaded.
-		// This can be used for all other allocations that exist for the duration that one level is loaded.
+
 
 	rl.ChangeDirectory(rl.GetApplicationDirectory())
 	rl.SetConfigFlags({.WINDOW_RESIZABLE})
