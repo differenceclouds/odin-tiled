@@ -5,17 +5,20 @@ import fmt "core:fmt"
 
 // This file includes optional helper procedures for parsing Tiled map data. This file was not included in the original tiled package.
 
-tileset_from_gid :: proc(tilesets: []Tileset, gid: i32) -> (Tileset, int) {
+// Returns the tileset and its index associated with a gid.
+// The index is useful if storing a slice of textures that corresponds to each tileset.
+get_tileset_from_gid :: proc(tilesets: []Tileset, gid: i32) -> (tileset: ^Tileset, index: int) {
 	if len(tilesets) == 1 {
-		return tilesets[0], 0
+		return &tilesets[0], 0
 	} else {
-		for ts, idx in tilesets {
+		gid := gid & 0x0FFFFFFF
+		for &ts, idx in tilesets {
 			if gid >= ts.first_gid && gid < ts.first_gid + ts.tile_count {
-				return ts, idx
+				return &ts, idx
 			}
 		}
 	}
-	return {}, 0
+	return nil, 0
 }
 
 Flip :: enum {

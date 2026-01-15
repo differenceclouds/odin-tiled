@@ -49,8 +49,14 @@ parse_tilemap_and_tilesets :: proc(path: string, alloc : mem.Allocator) -> Map {
 	dir := filepath.dir(path, alloc)
 	for &ts in m.tilesets {
 		if ts.source == "" do continue
-		ts_path := filepath.join({dir, ts.source})
+		ts_path := filepath.join({dir, ts.source}, alloc)
 		external_ts := parse_tileset(ts_path, alloc)
+
+		// check could be better
+		if external_ts.type == "" {
+			fmt.printfln("Couldn't parse tileset %v", ts.source)
+		}
+
 		external_ts.first_gid = ts.first_gid
 		external_ts.source = ts.source
 		ts = external_ts
@@ -80,15 +86,6 @@ parse_tileset :: proc(path: string, alloc : mem.Allocator) -> Tileset {
 	return ts
 }
 
-parse_external_tilesets :: proc(m: Map, alloc : mem.Allocator) -> []Tileset {
-	tilesets := make_slice([]Tileset, len(m.tilesets), alloc)
-	for &tileset, i in tilesets {
-		tileset = parse_tileset(m.tilesets[i].source, alloc)
-		tileset.first_gid = m.tilesets[i].first_gid
-	}
-	return tilesets
-}
-
 
 // parse_template :: proc(path: string, alloc: mem.Allocator = context.allocator) -> Obj
 
@@ -105,6 +102,74 @@ PropertyData :: union {
 	f32,	// Float
 }
 
+// Map.type (only one entry, "map") and Tileset.type (one entry: "tileset") could also be enum-ified if desired.
+
+MapOrientation :: enum {
+	Orthogonal,
+	Isometric,
+	Staggered,
+	Hexagonal,
+
+	orthogonal = Orthogonal,
+	isometric = Isometric,
+	staggered = Staggered,
+	hexagonal = Hexagonal,
+}
+
+MapStaggerAxis :: enum {
+	x, y
+}
+
+// Currently unused because json string includes dashes. "right-down" etc.
+// A custom unmarshaller would be needed, or an intermediate type, which is undesirable for this one instance.
+
+// MapRenderOrder :: enum {
+// 	RightDown,	//"right-down"
+// 	RightUp,	//"right-up"
+// 	LeftDown,	//"left-down"
+// 	LeftUp,		//"left-up"
+// }
+
+LayerType :: enum {
+	TileLayer,
+	ObjectLayer,
+	ImageLayer,
+	LayerGroup,
+
+	tilelayer = TileLayer,
+	objectgroup = ObjectLayer,
+	imagelayer = ImageLayer,
+	group = LayerGroup,
+}
+
+LayerCompression :: enum {
+	None,
+	zlib,
+	gzip,
+	zstd
+}
+
+LayerEncoding :: enum {
+	csv,
+	base64,
+}
+
+ObjectLayerDrawOrder :: enum {
+	TopDown,
+	Index,
+
+	topdown = TopDown,
+	index = Index,
+}
+
+GridOrientation :: enum {
+	Orthogonal,
+	Isometric,
+
+	orthogonal = Orthogonal,
+	isometric = Isometric,
+}
+
 // Map describes a Tiled map.
 Map :: struct {
 	background_color:  string `json:"backgroundcolor"`,     // Hex-formatted color (#RRGGBB or #AARRGGBB) (optional).
@@ -114,10 +179,10 @@ Map :: struct {
 	layers:            []Layer `json:"layers"`,             // Array of Layers.
 	next_layer_id:     i32 `json:"nextlayerid"`,            // Auto-increments for each layer.
 	next_object_id:    i32 `json:"nextobjectid"`,           // Auto-increments for each placed object.
-	orientation:       string `json:"orientation"`,         // "orthogonal", "isometric", "staggered" or "hexagonal".
+	orientation:       MapOrientation `json:"orientation"`, // "orthogonal", "isometric", "staggered" or "hexagonal".
 	properties:        []Property `json:"properties"`,      // A list of properties (name, value, type).
 	render_order:      string `json:"renderorder"`,         // Rendering direction (orthogonal maps only).
-	stagger_axis:      string `json:"staggeraxis"`,         // "x" or "y" (staggered / hexagonal maps only).
+	stagger_axis:      MapStaggerAxis `json:"staggeraxis"`, // "x" or "y" (staggered / hexagonal maps only).
 	stagger_index:     string `json:"staggerindex"`,        // "odd" or "even" (staggered / hexagonal maps only).
 	tiled_version:     string `json:"tiledversion"`,        // The Tiled version used to save the file.
 	tile_height:       i32 `json:"tileheight"`,             // Map grid height.
@@ -137,38 +202,38 @@ Property :: struct {
 
 Layer :: struct {
 	// Common
-	id:                i32 `json:"id"`,                  	// Incremental id - unique across all layers
-	name:              string `json:"name"`,               	// Name assigned to this layer
-	type:              string `json:"type"`,               	// "tilelayer, "objectgroup, "imagelayer or "group"
-	visible:           bool `json:"visible"`,               // Whether layer is shown or hidden in editor
-	width:             i32 `json:"width"`,                  // Column count. Same as map width for fixed-size maps
-	height:            i32 `json:"height"`,                 // Row count. Same as map height for fixed-size maps
-	x:                 i32 `json:"x"`,                  	// Horizontal layer offset in tiles. Always 0
-	y:                 i32 `json:"y"`,                  	// Vertical layer offset in tiles. Always 0
-	offset_x:          f32 `json:"offsetx"`,                // Horizontal layer offset in pixels (default: 0)
-	offset_y:          f32 `json:"offsety"`,                // Vertical layer offset in pixels (default: 0)
-	parallax_x:		   Maybe(f32) `json:"parallaxx"`,		// Horizontal layer parallax, default to 1
-	parallax_y:		   Maybe(f32) `json:"parallaxy"`,		// Vertical layer parallax, default to 1
-	opacity:           f32 `json:"opacity"`,                // Value between 0 and 1
-	properties:        []Property `json:"properties"`,      // A list of properties (name, value, type)
+	id:                i32 `json:"id"`,                        // Incremental id - unique across all layers
+	name:              string `json:"name"`,                   // Name assigned to this layer
+	type:              LayerType `json:"type"`,                // "tilelayer, "objectgroup, "imagelayer or "group"
+	visible:           bool `json:"visible"`,                  // Whether layer is shown or hidden in editor
+	width:             i32 `json:"width"`,                     // Column count. Same as map width for fixed-size maps
+	height:            i32 `json:"height"`,                    // Row count. Same as map height for fixed-size maps
+	x:                 i32 `json:"x"`,                         // Horizontal layer offset in tiles. Always 0
+	y:                 i32 `json:"y"`,                         // Vertical layer offset in tiles. Always 0
+	offset_x:          f32 `json:"offsetx"`,                   // Horizontal layer offset in pixels (default: 0)
+	offset_y:          f32 `json:"offsety"`,                   // Vertical layer offset in pixels (default: 0)
+	parallax_x:		   Maybe(f32) `json:"parallaxx"`,          // Horizontal layer parallax, default to 1
+	parallax_y:		   Maybe(f32) `json:"parallaxy"`,          // Vertical layer parallax, default to 1
+	opacity:           f32 `json:"opacity"`,                   // Value between 0 and 1
+	properties:        []Property `json:"properties"`,         // A list of properties (name, value, type)
 
 	// TileLayer only
-	chunks:            []Chunk `json:"chunks"`,             // Array of chunks (optional, for ininite maps)
-	compression:       string `json:"compression"`,         // "zlib", "gzip" or empty (default)
+	chunks:            []Chunk `json:"chunks"`,                // Array of chunks (optional, for ininite maps)
+	compression:       LayerCompression `json:"compression"`,  // "zlib", "gzip" or empty (default)
 	// data:              ArrayOrString `json:"data"`,
 	data:              []i32 `json:"data"`,
-	encoding:          string `json:"encoding"`,            // "csv" (default) or "base64"
+	encoding:          LayerEncoding `json:"encoding"`,        // "csv" (default) or "base64"
 
 	// ObjectGroup only
-	objects:           []Object `json:"objects"`,           // Array of objects
-	drawOrder:         string `json:"drawOrder"`,           // "topdown" (default) or "index"
+	objects:           []Object `json:"objects"`,              // Array of objects
+	drawOrder:         ObjectLayerDrawOrder `json:"drawOrder"`,// "topdown" (default) or "index"
 
 	// Group only
-	layers:            []Layer `json:"layers"`,             // Array of layers
+	layers:            []Layer `json:"layers"`,                // Array of layers
 
 	// ImageLayer only
-	image:             string `json:"image"`,               // Image used by this layer
-	transparent_color: string `json:"transparentcolor"`,    // Hex-formatted color (#RRGGBB) (optional)
+	image:             string `json:"image"`,                  // Image used by this layer
+	transparent_color: string `json:"transparentcolor"`,       // Hex-formatted color (#RRGGBB) (optional)
 }
 
 // Chunk is used to store the tile layer data for infinite maps.
@@ -182,23 +247,23 @@ Chunk :: struct {
 }
 
 Object :: struct {
-    id:                i32 `json:"id"`,                  	// Incremental id - unique across all objects
-    gid:               i32 `json:"gid"`,                  	// GID, only if object comes from a Tilemap
-    name:              string `json:"name"`,               	// String assigned to name field in editor
-    type:              string `json:"type"`,               	// String assigned to type field in editor
-    x:                 f64 `json:"x"`,                  	// X coordinate in pixels
-    y:                 f64 `json:"y"`,                  	// Y coordinate in pixels
-    width:             f64 `json:"width"`,                  // Width in pixels, ignored if using a gid
-    height:            f64 `json:"height"`,                 // Height in pixels, ignored if using a gid
-    visible:           bool `json:"visible"`,               // Whether object is shown in editor
-    ellipse:           bool `json:"ellipse"`,               // Used to mark an object as an ellipse
-    point:             bool `json:"point"`,                 // Used to mark an object as a point
-    polygon:           []Coordinate `json:"polygon"`,       // A list of x,y coordinates in pixels
-    polyline:          []Coordinate `json:"polyline"`,      // A list of x,y coordinates in pixels
-    properties:        []Property `json:"properties"`,      // A list of properties (name, value, type)
-    rotation:          f64 `json:"rotation"`,               // Angle in degrees clockwise
-    template:          string `json:"template"`,            // Reference to a template file, in case object is a template instance
-    text:              map[string]i32 `json:"text"`,        // String key-value pairs
+	id:                i32 `json:"id"`,                  	// Incremental id - unique across all objects
+	gid:               i32 `json:"gid"`,                  	// GID, only if object comes from a Tilemap
+	name:              string `json:"name"`,               	// String assigned to name field in editor
+	type:              string `json:"type"`,               	// String assigned to type field in editor
+	x:                 f64 `json:"x"`,                  	// X coordinate in pixels
+	y:                 f64 `json:"y"`,                  	// Y coordinate in pixels
+	width:             f64 `json:"width"`,                  // Width in pixels, ignored if using a gid
+	height:            f64 `json:"height"`,                 // Height in pixels, ignored if using a gid
+	visible:           bool `json:"visible"`,               // Whether object is shown in editor
+	ellipse:           bool `json:"ellipse"`,               // Used to mark an object as an ellipse
+	point:             bool `json:"point"`,                 // Used to mark an object as a point
+	polygon:           []Coordinate `json:"polygon"`,       // A list of x,y coordinates in pixels
+	polyline:          []Coordinate `json:"polyline"`,      // A list of x,y coordinates in pixels
+	properties:        []Property `json:"properties"`,      // A list of properties (name, value, type)
+	rotation:          f64 `json:"rotation"`,               // Angle in degrees clockwise
+	template:          string `json:"template"`,            // Reference to a template file, in case object is a template instance
+	text:              map[string]i32 `json:"text"`,        // String key-value pairs
 }
 
 Coordinate :: struct {
@@ -244,7 +309,7 @@ Tileset :: struct {
 // The Grid element is only used in case of isometric orientation,
 // and determines how tile overlays for terrain and collision information are rendered.
 Grid :: struct {
-	orientation:      string `json:"orientation"`,          // "orthogonal" or "isometric"
+	orientation:      GridOrientation `json:"orientation"`, // "orthogonal" or "isometric"
 	width:            i32 `json:"width"`,                   // Width of a grid cell
 	height:           i32 `json:"height"`,                  // Height of a grid cell
 }
