@@ -9,7 +9,6 @@ import filepath "core:path/filepath"
 // If tilesets are embedded in your map, parse_tilemap() may be used, otherwise, parse_tilemap_and_tilesets() is provided.
 
 tiled_map_files := []string {
-	"levels/level0/level0.json",
 	"levels/jb-32.tmj",
 	"levels/level25.tmj",
 	"levels/MagicLand.tmj",
