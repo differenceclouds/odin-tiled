@@ -2,7 +2,7 @@ package tiled_example
 import "core:fmt"
 import rl "vendor:raylib"
 import "core:mem"
-import tiled "../"
+import tiled "../tiled"
 import filepath "core:path/filepath"
 
 // Tiled maps are in JSON format(.tmj), have "Tile Layer Format" CSV, and "Compression Level" -1.
